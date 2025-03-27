@@ -26,6 +26,13 @@ public class BowModule {
     public BowModule(@NotNull EventNode<EntityEvent> node, BiFunction<Player, ItemStack, ? extends AbstractProjectile> arrowSupplier, boolean requiresArrows) {
         node.addListener(PlayerBeginItemUseEvent.class, event -> {
             if (event.getItemStack().material() != Material.BOW) return;
+
+            if (requiresArrows) {
+                Player player = event.getPlayer();
+                final PlayerInventory inv = player.getInventory();
+                if (!checkHasArrows(inv)) { return; }
+            }
+
             event.getPlayer().setTag(CHARGE_SINCE_TAG, System.currentTimeMillis());
         });
         node.addListener(PlayerCancelItemUseEvent.class, event -> {
@@ -48,7 +55,7 @@ public class BowModule {
             Pos shootPosition = player.getPosition().add(0, player.getEyeHeight()-0.1, 0);
             projectile.shoot(shootPosition.asVec(), power*3, 1f); // this method already sets the instance
             player.getInstance().playSound(Sound.sound(SoundEvent.ENTITY_ARROW_SHOOT, Sound.Source.PLAYER, 1f, getRandomPitchFromPower(power)), player);
-            
+
             if (requiresArrows) {
                 for (int i = 0; i < inv.getItemStacks().length; i++) {
                     ItemStack curStack = inv.getItemStack(i);
