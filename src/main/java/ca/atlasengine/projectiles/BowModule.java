@@ -30,7 +30,10 @@ public class BowModule {
             if (requiresArrows) {
                 Player player = event.getPlayer();
                 final PlayerInventory inv = player.getInventory();
-                if (!checkHasArrows(inv)) { return; }
+                if (!checkHasArrows(inv)) {
+                    event.setCancelled(true);
+                    return;
+                }
             }
 
             event.getPlayer().setTag(CHARGE_SINCE_TAG, System.currentTimeMillis());
@@ -61,6 +64,7 @@ public class BowModule {
                     ItemStack curStack = inv.getItemStack(i);
                     if (curStack.material().equals(Material.ARROW)) {
                         inv.setItemStack(i, curStack.consume(1));
+                        break;
                     }
                 }
             }
