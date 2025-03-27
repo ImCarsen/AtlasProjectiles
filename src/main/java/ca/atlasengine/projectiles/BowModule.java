@@ -8,6 +8,7 @@ import net.minestom.server.event.EventNode;
 import net.minestom.server.event.item.PlayerBeginItemUseEvent;
 import net.minestom.server.event.item.PlayerCancelItemUseEvent;
 import net.minestom.server.event.trait.EntityEvent;
+import net.minestom.server.inventory.PlayerInventory;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.server.sound.SoundEvent;
@@ -22,7 +23,7 @@ public class BowModule {
     private static final Tag<Long> CHARGE_SINCE_TAG = Tag.Long("bow_charge_since").defaultValue(Long.MAX_VALUE);
     private static final Tag<Double> BOW_POWER = Tag.Double("bow_power").defaultValue(0.0);
 
-    public BowModule(@NotNull EventNode<EntityEvent> node, BiFunction<Player, ItemStack, ? extends AbstractProjectile> arrowSupplier) {
+    public BowModule(@NotNull EventNode<EntityEvent> node, BiFunction<Player, ItemStack, ? extends AbstractProjectile> arrowSupplier, boolean requiresArrows) {
         node.addListener(PlayerBeginItemUseEvent.class, event -> {
             if (event.getItemStack().material() != Material.BOW) return;
             event.getPlayer().setTag(CHARGE_SINCE_TAG, System.currentTimeMillis());
@@ -30,6 +31,11 @@ public class BowModule {
         node.addListener(PlayerCancelItemUseEvent.class, event -> {
             if (event.getItemStack().material() != Material.BOW) return;
             Player player = event.getPlayer();
+
+            final PlayerInventory inv = player.getInventory();
+
+            if (requiresArrows) { if (!checkHasArrows(inv)) { return; } }
+
             long duration = System.currentTimeMillis()-player.getTag(CHARGE_SINCE_TAG);
             double power = getPower(duration);
 
@@ -42,6 +48,15 @@ public class BowModule {
             Pos shootPosition = player.getPosition().add(0, player.getEyeHeight()-0.1, 0);
             projectile.shoot(shootPosition.asVec(), power*3, 1f); // this method already sets the instance
             player.getInstance().playSound(Sound.sound(SoundEvent.ENTITY_ARROW_SHOOT, Sound.Source.PLAYER, 1f, getRandomPitchFromPower(power)), player);
+            
+            if (requiresArrows) {
+                for (int i = 0; i < inv.getItemStacks().length; i++) {
+                    ItemStack curStack = inv.getItemStack(i);
+                    if (curStack.material().equals(Material.ARROW)) {
+                        inv.setItemStack(i, curStack.consume(1));
+                    }
+                }
+            }
         });
     }
 
@@ -56,5 +71,16 @@ public class BowModule {
 
     private float getRandomPitchFromPower(double power) {
         return (float) (1.0f / (ThreadLocalRandom.current().nextFloat() * 0.4f + 1.2f) + power * 0.5f);
+    }
+
+    // Check if the given PlayerInventory contains arrows
+    private boolean checkHasArrows(PlayerInventory inv) {
+        for (int i = inv.getItemStacks().length - 1; i >= 0; i--) {
+            ItemStack curStack = inv.getItemStack(i);
+            if (curStack.material().equals(Material.ARROW)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

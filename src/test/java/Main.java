@@ -88,7 +88,7 @@ public class Main {
                     }
                 });
 
-                new BowModule(player.eventNode(), (p, i) -> new ArrowProjectile(EntityType.ARROW, p));
+                new BowModule(player.eventNode(), (p, i) -> new ArrowProjectile(EntityType.ARROW, p), true);
             });
 
             // Logout
